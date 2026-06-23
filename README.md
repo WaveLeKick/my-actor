@@ -1,72 +1,105 @@
-[My Actor](https://apify.com/established_zabra/my-actor?fpr=data)
+[My Actor](https://apify.com/chatgpt.extkit/my-actor?fpr=data)
 
-## Overview
+# JavaScript PuppeteerCrawler Actor template
 
-The **Fake Candidate Checker** is an Apify actor designed to analyze LinkedIn profiles for **potential hiring fraud risk indicators** using **metadata-based heuristics**, explainable scoring, and optional limited public access checks.
+This template is a production ready boilerplate for developing with `PuppeteerCrawler`. The `PuppeteerCrawler` provides a simple framework for parallel crawling of web pages using headless Chrome with Puppeteer. Since `PuppeteerCrawler` uses headless Chrome to download web pages and extract data, it is useful for crawling of websites that require to execute JavaScript.
 
-The actor is built to remain reliable even when LinkedIn restricts automated access by falling back to **non-invasive metadata-only analysis** instead of failing or attempting aggressive scraping.
+If you're looking for examples or want to learn more visit:
 
-This makes it suitable for **HR teams, recruiters, staffing agencies, and hiring managers** who want early signals about profiles that may require additional verification.
+- [Crawlee + Apify Platform guide](https://crawlee.dev/docs/guides/apify-platform)
+- [Examples](https://crawlee.dev/docs/examples/puppeteer-crawler)
 
----
+## Included features
 
-## What Problem Does This Solve?
+- **[Puppeteer Crawler](https://crawlee.dev/api/puppeteer-crawler/class/PuppeteerCrawler)** - simple framework for parallel crawling of web pages using headless Chrome with Puppeteer
+- **[Configurable Proxy](https://crawlee.dev/docs/guides/proxy-management#proxy-configuration)** - tool for working around IP blocking
+- **[Input schema](https://docs.apify.com/platform/actors/development/input-schema)** - define and easily validate a schema for your Actor's input
+- **[Dataset](https://docs.apify.com/sdk/js/docs/guides/result-storage#dataset)** - store structured data where each object stored has the same attributes
+- **[Apify SDK](https://docs.apify.com/api/client/js/)** - toolkit for building Actors
 
-Modern hiring processes increasingly face challenges such as:
+## How it works
 
-- Fake or misrepresented candidates
-- Auto-generated or incomplete LinkedIn profiles
-- Inconsistent public profile signals
-- Increased risk in remote hiring workflows
-- Wasted interview and onboarding effort
+1. `Actor.getInput()` gets the input from `INPUT.json` where the start urls are defined
+2. Create a configuration for proxy servers to be used during the crawling with `Actor.createProxyConfiguration()` to work around IP blocking. Use Apify Proxy or your own Proxy URLs provided and rotated according to the configuration. You can read more about proxy configuration [here](https://crawlee.dev/api/core/class/ProxyConfiguration).
+3. Create an instance of Crawlee's Puppeteer Crawler with `new PuppeteerCrawler()`. You can pass [options](https://crawlee.dev/api/puppeteer-crawler/interface/PuppeteerCrawlerOptions) to the crawler constructor as:
 
-This actor helps teams **identify profiles that may require enhanced screening** before progressing further in the hiring pipeline.
+- `proxyConfiguration` - provide the proxy configuration to the crawler
+- `requestHandler` - handle each request with custom router defined in the `routes.js` file.
+4. Handle requests with the custom router from `routes.js` file. Read more about custom routing for the Cheerio Crawler [here](https://crawlee.dev/api/puppeteer-crawler/function/createPuppeteerRouter)
 
----
-
-## Key Features
-
-- ✅ Metadata-only analysis (no LinkedIn login required)
-- ✅ Graceful handling of LinkedIn access restrictions
-- ✅ Explainable risk scores with clear flags
-- ✅ Store-safe, non-invasive design
-- ✅ Works reliably even when LinkedIn blocks access
-- ✅ Suitable for compliance-sensitive environments
-
----
-
-## How It Works
-
-1. Accepts one or more LinkedIn profile URLs
-2. Optionally attempts limited public data access
-3. If LinkedIn restricts access, switches to metadata-only heuristics
-4. Assigns a probabilistic **risk score**
-5. Outputs detected risk indicators and recommended next steps
-
----
-
-## Input
-
-### Example Input
+- Create a new router instance with `new createPuppeteerRouter()`
+- Define default handler that will be called for all URLs that are not handled by other handlers by adding `router.addDefaultHandler(() => { ... })`
+- Define additional handlers - here you can add your own handling of the page
 
 ```
-{
-  "linkedinUrls": [
-    "https://www.linkedin.com/in/example-profile/"
-  ],
-  "metadataOnly": true
-}
+router.addHandler('detail', async ({ request, page, log }) => {
+    const title = await page.title();
+    // You can add your own page handling here
 
-### Example Outputs
-{
-  "linkedinUrl": "https://www.linkedin.com/in/example-profile/",
-  "mode": "metadata-only",
-  "riskScore": 45,
-  "flags": [
-    "Limited public LinkedIn visibility",
-    "Suspicious numeric-heavy profile handle"
-  ],
-  "recommendation": "Manual review recommended",
-  "disclaimer": "This tool provides probabilistic risk indicators only and does not confirm fraud."
-}
+    await Dataset.pushData({
+        url: request.loadedUrl,
+        title,
+    });
+});
 ```
+5. `crawler.run(startUrls);` start the crawler and wait for its finish
+
+## Resources
+
+If you're looking for examples or want to learn more visit:
+
+- [Crawlee + Apify Platform guide](https://crawlee.dev/docs/guides/apify-platform)
+- [Documentation](https://crawlee.dev/api/playwright-crawler/class/PlaywrightCrawler) and [examples](https://crawlee.dev/docs/examples/playwright-crawler)
+- [Node.js tutorials](https://docs.apify.com/academy/node-js) in Academy
+- [How to scale Puppeteer and Playwright](https://blog.apify.com/how-to-scale-puppeteer-and-playwright/)
+- [Video guide on getting data using Apify API](https://www.youtube.com/watch?v=ViYYDHSBAKM)
+- [Integration with Make](https://apify.com/integrations), GitHub, Zapier, Google Drive, and other apps
+- A short guide on how to create Actors using code templates:
+
+[Video](https://www.youtube.com/embed/u-i-Korzf8w?enablejsapi=1&rel=0)
+
+## Getting started
+
+For complete information [see this article](https://docs.apify.com/platform/actors/development#build-actor-at-apify-console). In short, you will:
+
+1. Build the Actor
+2. Run the Actor
+
+## Pull the Actor for local development
+
+If you would like to develop locally, you can pull the existing Actor from Apify console using Apify CLI:
+
+1. Install `apify-cli`
+
+**Using Homebrew**
+
+```
+$brew install apify-cli
+```
+
+**Using NPM**
+
+```
+$npm -g install apify-cli
+```
+2. Pull the Actor by its unique `<ActorId>`, which is one of the following:
+
+- unique name of the Actor to pull (e.g. "apify/hello-world")
+- or ID of the Actor to pull (e.g. "E2jjCZBezvAZnX8Rb")
+
+You can find both by clicking on the Actor title at the top of the page, which will open a modal containing both Actor unique name and Actor ID.
+
+This command will copy the Actor into the current directory on your local machine.
+
+```
+$apify pull <ActorId>
+```
+
+## Documentation reference
+
+To learn more about Apify and Actors, take a look at the following resources:
+
+- [Apify SDK for JavaScript documentation](https://docs.apify.com/sdk/js)
+- [Apify SDK for Python documentation](https://docs.apify.com/sdk/python)
+- [Apify Platform documentation](https://docs.apify.com/platform)
+- [Join our developer community on Discord](https://discord.com/invite/jyEM2PRvMU)
